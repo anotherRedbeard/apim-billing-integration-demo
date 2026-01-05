@@ -160,7 +160,7 @@ apim-billing-integration-demo/
   - `POST /subscriptions/{id}/regenerateSecondaryKey` - Rotate secondary key
   - `DELETE /subscriptions/{id}` - Delete subscription permanently
 
-**Note**: For subscription deactivation, we use `PUT` to update the subscription state to "suspended" rather than deleting it, preserving the subscription history.
+**Note**: For subscription deactivation, we use `PUT /subscriptions/{id}` (supported in ARM API 2024-05-01) to update the subscription state to "suspended" rather than deleting it, preserving the subscription history for audit and compliance purposes.
 
 ### Testing
 - **xUnit** test framework
