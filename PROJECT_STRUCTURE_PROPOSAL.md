@@ -154,11 +154,13 @@ apim-billing-integration-demo/
 - **HttpClient** with custom ARM endpoint handlers
 - **API version: 2024-05-01** as specified
 - Supports:
-  - `PUT /subscriptions/{id}` - Create/update subscription
+  - `PUT /subscriptions/{id}` - Create/update subscription (including state changes)
   - `POST /subscriptions/{id}/listSecrets` - Get keys
   - `POST /subscriptions/{id}/regeneratePrimaryKey` - Rotate primary key
   - `POST /subscriptions/{id}/regenerateSecondaryKey` - Rotate secondary key
-  - `DELETE /subscriptions/{id}` - Delete subscription (if supported)
+  - `DELETE /subscriptions/{id}` - Delete subscription permanently
+
+**Note**: For subscription deactivation, we use `PUT` to update the subscription state to "suspended" rather than deleting it, preserving the subscription history.
 
 ### Testing
 - **xUnit** test framework
@@ -192,7 +194,7 @@ apim-billing-integration-demo/
 - `GET /api/products` - List available products
 - `POST /api/purchase` - Process purchase and create APIM subscription
 - `POST /api/subscriptions/{id}/rotate` - Rotate subscription keys
-- `DELETE /api/subscriptions/{id}` - Deactivate subscription
+- `DELETE /api/subscriptions/{id}` - Deactivate subscription (suspends via ARM PUT)
 
 **Business Logic**:
 - Validate purchase requests

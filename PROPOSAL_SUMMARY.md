@@ -95,12 +95,12 @@ PRODUCT_GOLD=gold-tier
 
 ## 📋 REST API Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/products` | List available products |
-| `POST` | `/api/purchase` | Purchase product & create APIM subscription |
-| `POST` | `/api/subscriptions/{id}/rotate` | Rotate subscription keys |
-| `DELETE` | `/api/subscriptions/{id}` | Deactivate subscription |
+| Method   | Endpoint                          | Description                                    |
+|----------|-----------------------------------|------------------------------------------------|
+| `GET`    | `/api/products`                   | List available products                        |
+| `POST`   | `/api/purchase`                   | Purchase product & create APIM subscription    |
+| `POST`   | `/api/subscriptions/{id}/rotate`  | Rotate subscription keys                       |
+| `DELETE` | `/api/subscriptions/{id}`         | Deactivate subscription (suspend state)        |
 
 ---
 
