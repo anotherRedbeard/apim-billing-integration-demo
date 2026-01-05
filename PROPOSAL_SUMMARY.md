@@ -13,7 +13,7 @@ A complete **.NET 9** solution demonstrating external billing system integration
 
 ---
 
-## 📦 Solution Structure (5 Projects)
+## 📦 Solution Structure (7 Projects Total)
 
 ```
 ApimBilling.sln
