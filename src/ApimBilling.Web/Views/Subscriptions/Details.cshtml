@@ -1,0 +1,223 @@
+@model ApimBilling.Contracts.SubscriptionInfo
+
+@{
+    ViewData["Title"] = "Subscription Details";
+}
+
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="display-5">@Model.SubscriptionName</h1>
+            <p class="text-muted">Subscription ID: @Model.SubscriptionId</p>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Subscription Information</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th width="30%">Product:</th>
+                            <td><strong>@Model.ProductName</strong> (@Model.ProductId)</td>
+                        </tr>
+                        <tr>
+                            <th>Status:</th>
+                            <td>
+                                @if (Model.State == "active")
+                                {
+                                    <span class="badge bg-success">Active</span>
+                                }
+                                else if (Model.State == "suspended")
+                                {
+                                    <span class="badge bg-warning">Suspended</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">@Model.State</span>
+                                }
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Created:</th>
+                            <td>@Model.CreatedDate.ToString("yyyy-MM-dd HH:mm:ss") UTC</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">API Keys</h5>
+                    <button class="btn btn-sm btn-outline-primary" type="button" id="toggleKeysBtn" onclick="toggleKeys()">
+                        <i class="bi bi-eye"></i> <span id="toggleKeysText">Show Keys</span>
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Primary Key:</strong></label>
+                        <div class="input-group">
+                            <input type="password" class="form-control font-monospace key-field" id="primaryKey" value="@Model.PrimaryKey" readonly />
+                            <button class="btn btn-outline-secondary copy-btn" type="button" onclick="copyToClipboard('primaryKey')" disabled>
+                                <i class="bi bi-clipboard"></i> Copy
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Secondary Key:</strong></label>
+                        <div class="input-group">
+                            <input type="password" class="form-control font-monospace key-field" id="secondaryKey" value="@Model.SecondaryKey" readonly />
+                            <button class="btn btn-outline-secondary copy-btn" type="button" onclick="copyToClipboard('secondaryKey')" disabled>
+                                <i class="bi bi-clipboard"></i> Copy
+                            </button>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <form asp-action="RotateKey" method="post" class="d-inline">
+                            <input type="hidden" name="id" value="@Model.SubscriptionId" />
+                            <input type="hidden" name="keyType" value="primary" />
+                            <button type="submit" class="btn btn-sm btn-outline-primary" onclick="return confirm('Rotate primary key? The old key will stop working.');">
+                                <i class="bi bi-arrow-repeat"></i> Rotate Primary
+                            </button>
+                        </form>
+                        <form asp-action="RotateKey" method="post" class="d-inline">
+                            <input type="hidden" name="id" value="@Model.SubscriptionId" />
+                            <input type="hidden" name="keyType" value="secondary" />
+                            <button type="submit" class="btn btn-sm btn-outline-primary" onclick="return confirm('Rotate secondary key? The old key will stop working.');">
+                                <i class="bi bi-arrow-repeat"></i> Rotate Secondary
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+                let keysVisible = false;
+
+                function toggleKeys() {
+                    keysVisible = !keysVisible;
+                    const keyFields = document.querySelectorAll('.key-field');
+                    const copyButtons = document.querySelectorAll('.copy-btn');
+                    const toggleText = document.getElementById('toggleKeysText');
+                    const toggleBtn = document.getElementById('toggleKeysBtn');
+
+                    keyFields.forEach(field => {
+                        field.type = keysVisible ? 'text' : 'password';
+                    });
+
+                    copyButtons.forEach(btn => {
+                        btn.disabled = !keysVisible;
+                    });
+
+                    if (keysVisible) {
+                        toggleText.textContent = 'Hide Keys';
+                        toggleBtn.innerHTML = '<i class="bi bi-eye-slash"></i> <span id="toggleKeysText">Hide Keys</span>';
+                    } else {
+                        toggleText.textContent = 'Show Keys';
+                        toggleBtn.innerHTML = '<i class="bi bi-eye"></i> <span id="toggleKeysText">Show Keys</span>';
+                    }
+                }
+
+                function copyToClipboard(fieldId) {
+                    const field = document.getElementById(fieldId);
+                    navigator.clipboard.writeText(field.value).then(() => {
+                        // Visual feedback
+                        const btn = field.nextElementSibling;
+                        const originalHtml = btn.innerHTML;
+                        btn.innerHTML = '<i class="bi bi-check"></i> Copied!';
+                        btn.classList.remove('btn-outline-secondary');
+                        btn.classList.add('btn-success');
+                        
+                        setTimeout(() => {
+                            btn.innerHTML = originalHtml;
+                            btn.classList.remove('btn-success');
+                            btn.classList.add('btn-outline-secondary');
+                        }, 2000);
+                    });
+                }
+            </script>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Customer Actions</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">Simulate customer payment scenarios:</p>
+                    
+                    @if (Model.State == "active")
+                    {
+                        <div class="d-grid gap-2">
+                            <form asp-action="StopPaying" method="post">
+                                <input type="hidden" name="id" value="@Model.SubscriptionId" />
+                                <button type="submit" class="btn btn-warning w-100">
+                                    <i class="bi bi-pause-circle"></i> User Stopped Paying
+                                </button>
+                            </form>
+                            <form asp-action="DeclineToPay" method="post">
+                                <input type="hidden" name="id" value="@Model.SubscriptionId" />
+                                <button type="submit" class="btn btn-danger w-100" onclick="return confirm('This will permanently delete the subscription. Continue?');">
+                                    <i class="bi bi-x-circle"></i> User Declined to Pay
+                                </button>
+                            </form>
+                        </div>
+                    }
+                    else if (Model.State == "suspended")
+                    {
+                        <div class="d-grid gap-2">
+                            <form asp-action="ResumePaying" method="post">
+                                <input type="hidden" name="id" value="@Model.SubscriptionId" />
+                                <button type="submit" class="btn btn-success w-100">
+                                    <i class="bi bi-play-circle"></i> User Resumed Paying
+                                </button>
+                            </form>
+                            <form asp-action="DeclineToPay" method="post">
+                                <input type="hidden" name="id" value="@Model.SubscriptionId" />
+                                <button type="submit" class="btn btn-danger w-100" onclick="return confirm('This will permanently delete the subscription. Continue?');">
+                                    <i class="bi bi-x-circle"></i> User Declined to Pay
+                                </button>
+                            </form>
+                        </div>
+                    }
+
+                    <hr />
+                    <a asp-controller="Products" asp-action="Index" class="btn btn-outline-secondary w-100">
+                        <i class="bi bi-arrow-left"></i> Back to Products
+                    </a>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="card-title">Demo Actions Explained</h6>
+                    <ul class="small mb-0">
+                        <li><strong>User Paid:</strong> Creating subscription (Active)</li>
+                        <li><strong>User Stopped Paying:</strong> Suspends API access</li>
+                        <li><strong>User Resumed Paying:</strong> Reactivates subscription</li>
+                        <li><strong>User Declined to Pay:</strong> Deletes subscription permanently</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

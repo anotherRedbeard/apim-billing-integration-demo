@@ -1,0 +1,30 @@
+bin/
+obj/
+*.user
+*.suo
+.vs/
+.vscode/
+*.userprefs
+*.pidb
+*.DotSettings.user
+
+# Local configuration overrides
+*.local.bicepparam
+appsettings.*.local.json
+
+# Deployment scripts with real values
+infra/deploy.sh
+
+# Test results
+TestResults/
+coverage/
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
