@@ -177,7 +177,7 @@ resource frontendApp 'Microsoft.Web/sites@2023-01-01' = {
           value: '~3'
         }
         {
-          name: 'BillingApiBaseUrl'
+          name: 'BillingApi__BaseUrl'
           value: 'https://${backendAppName}.azurewebsites.net'
         }
         {
