@@ -99,6 +99,9 @@ resource backendApp 'Microsoft.Web/sites@2023-01-01' = {
   name: backendAppName
   location: location
   kind: 'app,linux'
+  tags: {
+    'azd-service-name': 'api'
+  }
   identity: {
     type: 'SystemAssigned'
   }
@@ -152,6 +155,9 @@ resource frontendApp 'Microsoft.Web/sites@2023-01-01' = {
   name: frontendAppName
   location: location
   kind: 'app,linux'
+  tags: {
+    'azd-service-name': 'web'
+  }
   properties: {
     serverFarmId: appServicePlan.id
     httpsOnly: true
