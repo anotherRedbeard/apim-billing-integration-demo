@@ -9,8 +9,8 @@ param baseName = 'apimbilling'
 param appServicePlanSku = 'B1'
 
 // APIM Configuration (Existing Resources)
-param apimResourceGroup = 'your-apim-resource-group'
-param apimName = 'your-apim-instance-name'
+param apimResourceGroup = readEnvironmentVariable('APIM_RESOURCE_GROUP', 'your-apim-resource-group')
+param apimName = readEnvironmentVariable('APIM_NAME', 'your-apim-instance-name')
 
 // APIM Product IDs (must match products in your APIM instance)
 param productBronze = 'bronze'

@@ -13,9 +13,21 @@ param environment string = 'dev'
 param baseName string = 'apimbilling'
 
 @description('APIM Resource Group Name (existing)')
+@metadata({
+  azd: {
+    type: 'parameter'
+    environment: 'APIM_RESOURCE_GROUP'
+  }
+})
 param apimResourceGroup string
 
 @description('APIM Instance Name (existing)')
+@metadata({
+  azd: {
+    type: 'parameter'
+    environment: 'APIM_NAME'
+  }
+})
 param apimName string
 
 @description('Azure Subscription ID for APIM')
@@ -87,6 +99,9 @@ resource backendApp 'Microsoft.Web/sites@2023-01-01' = {
   name: backendAppName
   location: location
   kind: 'app,linux'
+  tags: {
+    'azd-service-name': 'api'
+  }
   identity: {
     type: 'SystemAssigned'
   }
@@ -140,6 +155,9 @@ resource frontendApp 'Microsoft.Web/sites@2023-01-01' = {
   name: frontendAppName
   location: location
   kind: 'app,linux'
+  tags: {
+    'azd-service-name': 'web'
+  }
   properties: {
     serverFarmId: appServicePlan.id
     httpsOnly: true
@@ -159,7 +177,7 @@ resource frontendApp 'Microsoft.Web/sites@2023-01-01' = {
           value: '~3'
         }
         {
-          name: 'BillingApiBaseUrl'
+          name: 'BillingApi__BaseUrl'
           value: 'https://${backendAppName}.azurewebsites.net'
         }
         {
@@ -179,3 +197,10 @@ output backendAppUrl string = 'https://${backendApp.properties.defaultHostName}'
 output backendManagedIdentityPrincipalId string = backendApp.identity.principalId
 output appInsightsConnectionString string = appInsights.properties.ConnectionString
 output appInsightsInstrumentationKey string = appInsights.properties.InstrumentationKey
+
+// azd-specific outputs for service binding
+output AZURE_LOCATION string = location
+output API_URI string = 'https://${backendApp.properties.defaultHostName}'
+output WEB_URI string = 'https://${frontendApp.properties.defaultHostName}'
+output BACKEND_MANAGED_IDENTITY_PRINCIPAL_ID string = backendApp.identity.principalId
+output APPLICATIONINSIGHTS_CONNECTION_STRING string = appInsights.properties.ConnectionString
