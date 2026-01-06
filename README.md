@@ -154,9 +154,9 @@ Then access at https://localhost:7108 (frontend) and https://localhost:5001 (bac
 
 ### 4. Deploy to Azure
 
-#### Option A: Using Azure Developer CLI (azd) - Recommended
+#### Using Azure Developer CLI (azd) - Recommended
 
-The fastest way to deploy both infrastructure and code:
+The fastest way to deploy both infrastructure and code in one command:
 
 ```bash
 # Install azd (if not already installed)
@@ -169,7 +169,7 @@ powershell -ex AllSigned -c "Invoke-RestMethod 'https://aka.ms/install-azd.ps1' 
 # Login to Azure
 azd auth login
 
-# Create a new environment
+# Create a new environment (e.g., dev, staging, prod)
 azd env new dev
 
 # Set required environment variables
@@ -186,43 +186,40 @@ azd provision  # Deploy infrastructure only
 azd deploy     # Deploy code only
 ```
 
-The `azd up` command will:
-1. Create/update Azure resources (App Services, Application Insights)
-2. Build and deploy both backend and frontend applications
-3. Automatically configure RBAC for APIM access
-4. Display URLs for your deployed applications
+**What `azd up` does:**
+1. ✅ Creates/updates Azure resources (App Services, Application Insights, Log Analytics)
+2. ✅ Builds and deploys both backend API and frontend web applications
+3. ✅ Automatically configures RBAC for Managed Identity to access APIM
+4. ✅ Displays URLs for your deployed applications
 
-#### Option B: Using Azure CLI (Manual)
-
+**Multi-environment support:**
 ```bash
-# Copy and configure deployment script
-cp infra/deploy.sh.example infra/deploy.sh
-# Edit infra/deploy.sh with your actual APIM values
+# Create production environment
+azd env new prod
+azd env set APIM_NAME your-prod-apim-instance
+azd env set APIM_RESOURCE_GROUP your-prod-apim-rg
+# ... set other prod values
+azd up  # Deploys to production
 
-# Deploy infrastructure
-cd infra
-./deploy.sh rg-apimbilling-dev southcentralus
+# Switch between environments
+azd env select dev
+azd deploy  # Deploy to dev
 
-# The script will automatically:
-# - Create resource group
-# - Deploy App Services and Application Insights
-# - Configure RBAC for Managed Identity
-
-# Then manually deploy code
-dotnet publish src/ApimBilling.Api -c Release -o ./publish/api
-dotnet publish src/ApimBilling.Web -c Release -o ./publish/web
-# Use az webapp deploy or other deployment method
+azd env select prod
+azd deploy  # Deploy to prod
 ```
 
-#### Option C: GitHub Actions CI/CD
+#### GitHub Actions CI/CD
 
 Push to `main` branch and the GitHub Actions workflow will automatically:
-- Provision infrastructure using Bicep
-- Build .NET applications
-- Deploy to Azure App Services
-- Configure RBAC
+- ✅ Provision infrastructure using Bicep
+- ✅ Build .NET applications
+- ✅ Deploy to Azure App Services
+- ✅ Configure RBAC for APIM access
 
-See `.github/workflows/azure-dev.yml` for details.
+The workflow uses federated identity (OIDC) for secure, secretless authentication.
+
+See [`.github/workflows/azure-dev.yml`](.github/workflows/azure-dev.yml) for details.
 
 
 ---
@@ -248,11 +245,10 @@ When deployed to Azure App Service, the Bicep template automatically sets these 
 
 ### Configuration Files
 
-- **appsettings.Development.json** - Contains placeholder values only (safe to commit)
+- **appsettings.Development.json** - Local development settings with localhost URLs
 - **appsettings.json** - Production settings (no secrets)
-- **infra/main.bicepparam** - Parameter defaults (placeholders for Git)
-- **infra/deploy.sh** - Local deployment script (gitignored, contains real values)
-- **infra/deploy.sh.example** - Template for deploy.sh (committed)
+- **infra/main.bicepparam** - Bicep parameters with token substitution (e.g., `${APIM_NAME}`)
+- **.azure/{env}/.env** - Environment-specific values (gitignored, created by azd)
 
 ---
 
