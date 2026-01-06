@@ -1,0 +1,9 @@
+# Bicep build outputs
+*.json
+
+# Except for parameter files
+!*.bicepparam
+
+# Local environment files
+.env
+*.local.bicepparam
