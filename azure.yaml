@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: apim-billing-integration-demo
+metadata:
+  template: apim-billing-integration-demo
+
+# Define the services that make up this application
+services:
+  # Backend API Service
+  api:
+    project: ./src/ApimBilling.Api
+    language: csharp
+    host: appservice
+    
+  # Frontend Web Service
+  web:
+    project: ./src/ApimBilling.Web
+    language: csharp
+    host: appservice
+
+# Define infrastructure hooks
+hooks:
+  # Hook to configure RBAC after infrastructure is deployed
+  postprovision:
+    shell: sh
+    run: |
+      echo "Configuring RBAC for APIM access..."
+      BACKEND_PRINCIPAL_ID=$(azd env get-value BACKEND_MANAGED_IDENTITY_PRINCIPAL_ID)
+      APIM_NAME=$(azd env get-value APIM_NAME)
+      APIM_RESOURCE_GROUP=$(azd env get-value APIM_RESOURCE_GROUP)
+      AZURE_SUBSCRIPTION_ID=$(azd env get-value AZURE_SUBSCRIPTION_ID)
+      
+      if [ -n "$BACKEND_PRINCIPAL_ID" ] && [ -n "$APIM_NAME" ] && [ -n "$APIM_RESOURCE_GROUP" ] && [ -n "$AZURE_SUBSCRIPTION_ID" ]; then
+        APIM_SCOPE="/subscriptions/$AZURE_SUBSCRIPTION_ID/resourceGroups/$APIM_RESOURCE_GROUP/providers/Microsoft.ApiManagement/service/$APIM_NAME"
+        
+        echo "Granting API Management Service Contributor role to Managed Identity..."
+        az role assignment create \
+          --assignee "$BACKEND_PRINCIPAL_ID" \
+          --role "API Management Service Contributor" \
+          --scope "$APIM_SCOPE" || echo "Role assignment may already exist"
+      else
+        echo "Missing required environment variables for RBAC configuration"
+      fi
