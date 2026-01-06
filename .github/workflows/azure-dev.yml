@@ -1,3 +1,6 @@
+# Deploy APIM Billing Integration Demo to Azure using azd
+name: Deploy to Azure
+
 # Run when commits are pushed to main or manually triggered
 on:
   workflow_dispatch:
@@ -12,7 +15,7 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     env:
       AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
@@ -20,6 +23,7 @@ jobs:
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
       AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+      AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
       APIM_NAME: ${{ vars.APIM_NAME }}
       APIM_RESOURCE_GROUP: ${{ vars.APIM_RESOURCE_GROUP }}
     steps:
@@ -39,8 +43,6 @@ jobs:
 
       - name: Provision Infrastructure
         run: azd provision --no-prompt
-        env:
-          AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
 
       - name: Deploy Application
         run: azd deploy --no-prompt
