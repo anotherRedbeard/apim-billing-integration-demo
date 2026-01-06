@@ -15,6 +15,9 @@ appsettings.*.local.json
 # Deployment scripts with real values
 infra/deploy.sh
 
+# Azure Developer CLI
+.azure/
+
 # Test results
 TestResults/
 coverage/

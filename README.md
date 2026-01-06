@@ -154,6 +154,46 @@ Then access at https://localhost:7108 (frontend) and https://localhost:5001 (bac
 
 ### 4. Deploy to Azure
 
+#### Option A: Using Azure Developer CLI (azd) - Recommended
+
+The fastest way to deploy both infrastructure and code:
+
+```bash
+# Install azd (if not already installed)
+# macOS/Linux
+curl -fsSL https://aka.ms/install-azd.sh | bash
+
+# Windows
+powershell -ex AllSigned -c "Invoke-RestMethod 'https://aka.ms/install-azd.ps1' | Invoke-Expression"
+
+# Login to Azure
+azd auth login
+
+# Create a new environment
+azd env new dev
+
+# Set required environment variables
+azd env set APIM_NAME your-apim-instance-name
+azd env set APIM_RESOURCE_GROUP your-apim-resource-group
+azd env set AZURE_SUBSCRIPTION_ID your-subscription-id
+azd env set AZURE_LOCATION southcentralus
+
+# Deploy everything (infrastructure + code)
+azd up
+
+# Or deploy separately:
+azd provision  # Deploy infrastructure only
+azd deploy     # Deploy code only
+```
+
+The `azd up` command will:
+1. Create/update Azure resources (App Services, Application Insights)
+2. Build and deploy both backend and frontend applications
+3. Automatically configure RBAC for APIM access
+4. Display URLs for your deployed applications
+
+#### Option B: Using Azure CLI (Manual)
+
 ```bash
 # Copy and configure deployment script
 cp infra/deploy.sh.example infra/deploy.sh
@@ -167,17 +207,23 @@ cd infra
 # - Create resource group
 # - Deploy App Services and Application Insights
 # - Configure RBAC for Managed Identity
+
+# Then manually deploy code
+dotnet publish src/ApimBilling.Api -c Release -o ./publish/api
+dotnet publish src/ApimBilling.Web -c Release -o ./publish/web
+# Use az webapp deploy or other deployment method
 ```
 
-**For CI/CD pipelines**, use parameter overrides instead:
-```bash
-az deployment group create \
-  --resource-group rg-apimbilling \
-  --template-file infra/main.bicep \
-  --parameters infra/main.bicepparam \
-  --parameters apimName="${APIM_NAME}" \
-  --parameters apimResourceGroup="${APIM_RG}"
-```
+#### Option C: GitHub Actions CI/CD
+
+Push to `main` branch and the GitHub Actions workflow will automatically:
+- Provision infrastructure using Bicep
+- Build .NET applications
+- Deploy to Azure App Services
+- Configure RBAC
+
+See `.github/workflows/azure-dev.yml` for details.
+
 
 ---
 
