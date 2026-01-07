@@ -30,7 +30,15 @@ hooks:
       APIM_RESOURCE_GROUP=$(azd env get-value APIM_RESOURCE_GROUP)
       AZURE_SUBSCRIPTION_ID=$(azd env get-value AZURE_SUBSCRIPTION_ID)
       
-      if [ -n "$BACKEND_PRINCIPAL_ID" ] && [ -n "$APIM_NAME" ] && [ -n "$APIM_RESOURCE_GROUP" ] && [ -n "$AZURE_SUBSCRIPTION_ID" ]; then
+      # Check if BACKEND_PRINCIPAL_ID is available
+      if [ -z "$BACKEND_PRINCIPAL_ID" ]; then
+        echo "BACKEND_MANAGED_IDENTITY_PRINCIPAL_ID not found in environment."
+        echo "This usually means no infrastructure changes were deployed."
+        echo "Skipping RBAC configuration (likely already configured from previous deployment)."
+        exit 0
+      fi
+      
+      if [ -n "$APIM_NAME" ] && [ -n "$APIM_RESOURCE_GROUP" ] && [ -n "$AZURE_SUBSCRIPTION_ID" ]; then
         APIM_SCOPE="/subscriptions/$AZURE_SUBSCRIPTION_ID/resourceGroups/$APIM_RESOURCE_GROUP/providers/Microsoft.ApiManagement/service/$APIM_NAME"
         
         echo "Granting API Management Service Contributor role to Managed Identity..."
@@ -45,9 +53,11 @@ hooks:
         echo "RBAC configuration completed"
       else
         echo "ERROR: Missing required environment variables for RBAC configuration"
-        echo "BACKEND_PRINCIPAL_ID: $BACKEND_PRINCIPAL_ID"
         echo "APIM_NAME: $APIM_NAME"
         echo "APIM_RESOURCE_GROUP: $APIM_RESOURCE_GROUP"
+        echo "AZURE_SUBSCRIPTION_ID: $AZURE_SUBSCRIPTION_ID"
+        exit 1
+      fi
         echo "AZURE_SUBSCRIPTION_ID: $AZURE_SUBSCRIPTION_ID"
         exit 1
       fi
