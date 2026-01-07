@@ -34,10 +34,20 @@ hooks:
         APIM_SCOPE="/subscriptions/$AZURE_SUBSCRIPTION_ID/resourceGroups/$APIM_RESOURCE_GROUP/providers/Microsoft.ApiManagement/service/$APIM_NAME"
         
         echo "Granting API Management Service Contributor role to Managed Identity..."
+        echo "Principal ID: $BACKEND_PRINCIPAL_ID"
+        echo "APIM Scope: $APIM_SCOPE"
+        
         az role assignment create \
           --assignee "$BACKEND_PRINCIPAL_ID" \
           --role "API Management Service Contributor" \
-          --scope "$APIM_SCOPE" || echo "Role assignment may already exist"
+          --scope "$APIM_SCOPE" 2>&1 || echo "Role assignment may already exist (this is OK)"
+        
+        echo "RBAC configuration completed"
       else
-        echo "Missing required environment variables for RBAC configuration"
+        echo "ERROR: Missing required environment variables for RBAC configuration"
+        echo "BACKEND_PRINCIPAL_ID: $BACKEND_PRINCIPAL_ID"
+        echo "APIM_NAME: $APIM_NAME"
+        echo "APIM_RESOURCE_GROUP: $APIM_RESOURCE_GROUP"
+        echo "AZURE_SUBSCRIPTION_ID: $AZURE_SUBSCRIPTION_ID"
+        exit 1
       fi
