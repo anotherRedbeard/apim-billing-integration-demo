@@ -33,7 +33,14 @@ jobs:
       - name: Install azd
         uses: Azure/setup-azd@v2
         
-      - name: Log in with Azure (Federated Credentials)
+      - name: Log in with Azure CLI (Federated Credentials)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+        
+      - name: Log in with Azure Developer CLI
         run: |
           azd auth login \
             --client-id "$AZURE_CLIENT_ID" \
