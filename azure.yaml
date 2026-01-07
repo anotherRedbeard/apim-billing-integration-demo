@@ -25,10 +25,12 @@ hooks:
     shell: sh
     run: |
       echo "Configuring RBAC for APIM access..."
-      BACKEND_PRINCIPAL_ID=$(azd env get-value BACKEND_MANAGED_IDENTITY_PRINCIPAL_ID)
-      APIM_NAME=$(azd env get-value APIM_NAME)
-      APIM_RESOURCE_GROUP=$(azd env get-value APIM_RESOURCE_GROUP)
-      AZURE_SUBSCRIPTION_ID=$(azd env get-value AZURE_SUBSCRIPTION_ID)
+      
+      # Get values safely (don't fail if not found)
+      BACKEND_PRINCIPAL_ID=$(azd env get-value BACKEND_MANAGED_IDENTITY_PRINCIPAL_ID 2>/dev/null || echo "")
+      APIM_NAME=$(azd env get-value APIM_NAME 2>/dev/null || echo "")
+      APIM_RESOURCE_GROUP=$(azd env get-value APIM_RESOURCE_GROUP 2>/dev/null || echo "")
+      AZURE_SUBSCRIPTION_ID=$(azd env get-value AZURE_SUBSCRIPTION_ID 2>/dev/null || echo "")
       
       # Check if BACKEND_PRINCIPAL_ID is available
       if [ -z "$BACKEND_PRINCIPAL_ID" ]; then
