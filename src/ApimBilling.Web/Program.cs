@@ -5,6 +5,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
+// Add IHttpContextAccessor for session access in services
+builder.Services.AddHttpContextAccessor();
+
 // Configure Billing API client
 builder.Services.AddHttpClient<IBillingApiClient, BillingApiClient>();
 

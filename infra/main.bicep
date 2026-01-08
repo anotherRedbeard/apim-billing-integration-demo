@@ -12,24 +12,6 @@ param environment string = 'dev'
 @description('Base name for resources')
 param baseName string = 'apimbilling'
 
-@description('APIM Resource Group Name (existing)')
-@metadata({
-  azd: {
-    type: 'parameter'
-    environment: 'APIM_RESOURCE_GROUP'
-  }
-})
-param apimResourceGroup string
-
-@description('APIM Instance Name (existing)')
-@metadata({
-  azd: {
-    type: 'parameter'
-    environment: 'APIM_NAME'
-  }
-})
-param apimName string
-
 @description('Azure Subscription ID for APIM')
 param azureSubscriptionId string = subscription().subscriptionId
 
@@ -122,14 +104,6 @@ resource backendApp 'Microsoft.Web/sites@2023-01-01' = {
         {
           name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
           value: '~3'
-        }
-        {
-          name: 'APIM_NAME'
-          value: apimName
-        }
-        {
-          name: 'APIM_RESOURCE_GROUP'
-          value: apimResourceGroup
         }
         {
           name: 'AZURE_SUBSCRIPTION_ID'

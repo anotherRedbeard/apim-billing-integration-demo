@@ -20,50 +20,36 @@ services:
 
 # Define infrastructure hooks
 hooks:
-  # Hook to configure RBAC after infrastructure is deployed
+  # Hook to display RBAC instructions after infrastructure is deployed
   postprovision:
     shell: sh
     run: |
-      echo "Configuring RBAC for APIM access..."
+      echo "Deployment complete!"
+      echo ""
+      echo "IMPORTANT: RBAC Configuration Required"
+      echo "=========================================="
       
-      # Get values from azd environment (only outputs are stored there)
+      # Get the backend's managed identity principal ID
       BACKEND_PRINCIPAL_ID=$(azd env get-value BACKEND_MANAGED_IDENTITY_PRINCIPAL_ID 2>/dev/null || echo "")
       
-      # Use environment variables from GitHub Actions workflow (not azd env)
-      # These are set by the workflow and available in the shell environment
-      APIM_NAME_VALUE="${APIM_NAME}"
-      APIM_RESOURCE_GROUP_VALUE="${APIM_RESOURCE_GROUP}"
-      AZURE_SUBSCRIPTION_ID_VALUE="${AZURE_SUBSCRIPTION_ID}"
-      
-      # Check if BACKEND_PRINCIPAL_ID is available
-      if [ -z "$BACKEND_PRINCIPAL_ID" ]; then
-        echo "BACKEND_MANAGED_IDENTITY_PRINCIPAL_ID not found in environment."
-        echo "This usually means no infrastructure changes were deployed."
-        echo "Skipping RBAC configuration (likely already configured from previous deployment)."
-        exit 0
-      fi
-      
-      if [ -n "$APIM_NAME_VALUE" ] && [ -n "$APIM_RESOURCE_GROUP_VALUE" ] && [ -n "$AZURE_SUBSCRIPTION_ID_VALUE" ]; then
-        APIM_SCOPE="/subscriptions/$AZURE_SUBSCRIPTION_ID_VALUE/resourceGroups/$APIM_RESOURCE_GROUP_VALUE/providers/Microsoft.ApiManagement/service/$APIM_NAME_VALUE"
-        
-        echo "Granting API Management Service Contributor role to Managed Identity..."
-        echo "Principal ID: $BACKEND_PRINCIPAL_ID"
-        echo "APIM Scope: $APIM_SCOPE"
-        
-        az role assignment create \
-          --assignee "$BACKEND_PRINCIPAL_ID" \
-          --role "API Management Service Contributor" \
-          --scope "$APIM_SCOPE" 2>&1 || echo "Role assignment may already exist (this is OK)"
-        
-        echo "RBAC configuration completed successfully"
-        exit 0
+      if [ -n "$BACKEND_PRINCIPAL_ID" ]; then
+        echo "Backend Managed Identity Principal ID: $BACKEND_PRINCIPAL_ID"
+        echo ""
+        echo "To enable APIM billing integration, grant the following role assignment"
+        echo "on EACH APIM instance your users will access:"
+        echo ""
+        echo "  Role: API Management Service Contributor"
+        echo "  Assignee: $BACKEND_PRINCIPAL_ID"
+        echo ""
+        echo "Example command:"
+        echo "  az role assignment create \\"
+        echo "    --assignee \"$BACKEND_PRINCIPAL_ID\" \\"
+        echo "    --role \"API Management Service Contributor\" \\"
+        echo "    --scope \"/subscriptions/<SUB_ID>/resourceGroups/<RG>/providers/Microsoft.ApiManagement/service/<APIM_NAME>\""
+        echo ""
       else
-        echo "ERROR: Missing required environment variables for RBAC configuration"
-        echo "APIM_NAME: $APIM_NAME_VALUE"
-        echo "APIM_RESOURCE_GROUP: $APIM_RESOURCE_GROUP_VALUE"
-        echo "AZURE_SUBSCRIPTION_ID: $AZURE_SUBSCRIPTION_ID_VALUE"
-        exit 1
+        echo "Could not retrieve backend managed identity. Check deployment outputs."
       fi
-        echo "AZURE_SUBSCRIPTION_ID: $AZURE_SUBSCRIPTION_ID"
-        exit 1
-      fi
+      
+      exit 0
+

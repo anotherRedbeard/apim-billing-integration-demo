@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using ApimBilling.Contracts;
+using ApimBilling.Web.Models;
 
 namespace ApimBilling.Web.Services;
 
@@ -22,23 +23,57 @@ public class BillingApiClient : IBillingApiClient
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<BillingApiClient> _logger;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IConfiguration _configuration;
 
-    public BillingApiClient(HttpClient httpClient, IConfiguration configuration, ILogger<BillingApiClient> logger)
+    public BillingApiClient(
+        HttpClient httpClient, 
+        IConfiguration configuration, 
+        ILogger<BillingApiClient> logger,
+        IHttpContextAccessor httpContextAccessor)
     {
         _httpClient = httpClient;
         _logger = logger;
+        _httpContextAccessor = httpContextAccessor;
+        _configuration = configuration;
         
-        var apiUrl = configuration["BillingApi:BaseUrl"] 
-            ?? throw new InvalidOperationException("BillingApi:BaseUrl configuration is required");
-        
-        _httpClient.BaseAddress = new Uri(apiUrl);
+        // Set base URL from configuration
+        var baseUrl = _configuration["BillingApi:BaseUrl"];
+        if (!string.IsNullOrEmpty(baseUrl))
+        {
+            _httpClient.BaseAddress = new Uri(baseUrl);
+        }
+    }
+
+    /// <summary>
+    /// Adds APIM headers to the request if available in session
+    /// </summary>
+    private void AddApimHeaders(HttpRequestMessage request)
+    {
+        var serviceName = _httpContextAccessor.HttpContext?.Session.GetString(SessionKeys.ApimServiceName);
+        var resourceGroup = _httpContextAccessor.HttpContext?.Session.GetString(SessionKeys.ApimResourceGroup);
+
+        if (!string.IsNullOrEmpty(serviceName) && !string.IsNullOrEmpty(resourceGroup))
+        {
+            request.Headers.Add("X-APIM-ServiceName", serviceName);
+            request.Headers.Add("X-APIM-ResourceGroup", resourceGroup);
+            _logger.LogDebug("Added APIM headers: ServiceName={ServiceName}, ResourceGroup={ResourceGroup}", 
+                serviceName, resourceGroup);
+        }
+        else
+        {
+            _logger.LogWarning("APIM configuration not found in session. Backend will use default configuration.");
+        }
     }
 
     public async Task<List<Product>> GetProductsAsync()
     {
         _logger.LogInformation("Fetching products from Billing API");
         
-        var response = await _httpClient.GetAsync("/api/products");
+        var request = new HttpRequestMessage(HttpMethod.Get, "/api/products");
+        AddApimHeaders(request);
+        
+        var response = await _httpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();
         
         var products = await response.Content.ReadFromJsonAsync<List<Product>>() ?? new List<Product>();
@@ -48,12 +83,18 @@ public class BillingApiClient : IBillingApiClient
         return products;
     }
 
-    public async Task<PurchaseResponse> PurchaseProductAsync(PurchaseRequest request)
+    public async Task<PurchaseResponse> PurchaseProductAsync(PurchaseRequest purchaseRequest)
     {
         _logger.LogInformation("Purchasing product: {ProductId} for {Email}", 
-            request.ProductId, request.CustomerEmail);
+            purchaseRequest.ProductId, purchaseRequest.CustomerEmail);
         
-        var response = await _httpClient.PostAsJsonAsync("/api/subscriptions/purchase", request);
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/subscriptions/purchase")
+        {
+            Content = JsonContent.Create(purchaseRequest)
+        };
+        AddApimHeaders(request);
+        
+        var response = await _httpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();
         
         var result = await response.Content.ReadFromJsonAsync<PurchaseResponse>() 
@@ -68,7 +109,10 @@ public class BillingApiClient : IBillingApiClient
     {
         _logger.LogInformation("Getting subscription: {SubscriptionId}", subscriptionId);
         
-        var response = await _httpClient.GetAsync($"/api/subscriptions/{subscriptionId}");
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/api/subscriptions/{subscriptionId}");
+        AddApimHeaders(request);
+        
+        var response = await _httpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();
         
         return await response.Content.ReadFromJsonAsync<SubscriptionInfo>() 
@@ -79,7 +123,10 @@ public class BillingApiClient : IBillingApiClient
     {
         _logger.LogInformation("Getting subscriptions for email: {Email}", email);
         
-        var response = await _httpClient.GetAsync($"/api/subscriptions?email={Uri.EscapeDataString(email)}");
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/api/subscriptions?email={Uri.EscapeDataString(email)}");
+        AddApimHeaders(request);
+        
+        var response = await _httpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();
         
         return await response.Content.ReadFromJsonAsync<List<SubscriptionInfo>>() ?? new List<SubscriptionInfo>();
@@ -90,8 +137,14 @@ public class BillingApiClient : IBillingApiClient
         _logger.LogInformation("Updating subscription {SubscriptionId} - Action: {Action}", 
             subscriptionId, action);
         
-        var request = new UpdateSubscriptionRequest { Action = action };
-        var response = await _httpClient.PatchAsJsonAsync($"/api/subscriptions/{subscriptionId}/state", request);
+        var updateRequest = new UpdateSubscriptionRequest { Action = action };
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"/api/subscriptions/{subscriptionId}/state")
+        {
+            Content = JsonContent.Create(updateRequest)
+        };
+        AddApimHeaders(request);
+        
+        var response = await _httpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();
         
         return await response.Content.ReadFromJsonAsync<SubscriptionInfo>() 
@@ -103,8 +156,14 @@ public class BillingApiClient : IBillingApiClient
         _logger.LogInformation("Rotating {KeyType} key for subscription {SubscriptionId}", 
             keyType, subscriptionId);
         
-        var request = new RotateKeyRequest { KeyType = keyType };
-        var response = await _httpClient.PostAsJsonAsync($"/api/subscriptions/{subscriptionId}/rotate-key", request);
+        var rotateRequest = new RotateKeyRequest { KeyType = keyType };
+        var request = new HttpRequestMessage(HttpMethod.Post, $"/api/subscriptions/{subscriptionId}/rotate-key")
+        {
+            Content = JsonContent.Create(rotateRequest)
+        };
+        AddApimHeaders(request);
+        
+        var response = await _httpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();
     }
 
@@ -112,7 +171,10 @@ public class BillingApiClient : IBillingApiClient
     {
         _logger.LogInformation("Deleting subscription: {SubscriptionId}", subscriptionId);
         
-        var response = await _httpClient.DeleteAsync($"/api/subscriptions/{subscriptionId}");
+        var request = new HttpRequestMessage(HttpMethod.Delete, $"/api/subscriptions/{subscriptionId}");
+        AddApimHeaders(request);
+        
+        var response = await _httpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();
     }
 }

@@ -13,27 +13,33 @@ public static class SubscriptionEndpoints
 
         group.MapGet("/", GetAllSubscriptions)
             .WithName("GetAllSubscriptions")
-            .WithSummary("Get all subscriptions");
+            .WithSummary("Get all subscriptions")
+            .WithDescription("Required headers: X-APIM-ServiceName, X-APIM-ResourceGroup");
 
         group.MapPost("/purchase", PurchaseProduct)
             .WithName("PurchaseProduct")
-            .WithSummary("Purchase a product and create APIM subscription");
+            .WithSummary("Purchase a product and create APIM subscription")
+            .WithDescription("Required headers: X-APIM-ServiceName, X-APIM-ResourceGroup");
 
         group.MapGet("/{subscriptionId}", GetSubscription)
             .WithName("GetSubscription")
-            .WithSummary("Get subscription details");
+            .WithSummary("Get subscription details")
+            .WithDescription("Required headers: X-APIM-ServiceName, X-APIM-ResourceGroup");
 
         group.MapPatch("/{subscriptionId}/state", UpdateSubscriptionState)
             .WithName("UpdateSubscriptionState")
-            .WithSummary("Update subscription state (activate/suspend/cancel)");
+            .WithSummary("Update subscription state (activate/suspend/cancel)")
+            .WithDescription("Required headers: X-APIM-ServiceName, X-APIM-ResourceGroup");
 
         group.MapPost("/{subscriptionId}/rotate-key", RotateKey)
             .WithName("RotateKey")
-            .WithSummary("Rotate subscription key");
+            .WithSummary("Rotate subscription key")
+            .WithDescription("Required headers: X-APIM-ServiceName, X-APIM-ResourceGroup");
 
         group.MapDelete("/{subscriptionId}", CancelSubscription)
             .WithName("CancelSubscription")
-            .WithSummary("Cancel and delete subscription");
+            .WithSummary("Cancel and delete subscription")
+            .WithDescription("Required headers: X-APIM-ServiceName, X-APIM-ResourceGroup");
     }
 
     private static async Task<IResult> GetAllSubscriptions(
