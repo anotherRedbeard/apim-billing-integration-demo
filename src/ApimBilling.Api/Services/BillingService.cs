@@ -1,4 +1,3 @@
-using ApimBilling.Api.Configuration;
 using ApimBilling.Api.Models;
 using ApimBilling.Contracts;
 
@@ -21,16 +20,13 @@ public interface IBillingService
 public class BillingService : IBillingService
 {
     private readonly IApimSubscriptionClient _apimClient;
-    private readonly ApimSettings _settings;
     private readonly ILogger<BillingService> _logger;
 
     public BillingService(
         IApimSubscriptionClient apimClient,
-        ApimSettings settings,
         ILogger<BillingService> logger)
     {
         _apimClient = apimClient;
-        _settings = settings;
         _logger = logger;
     }
 

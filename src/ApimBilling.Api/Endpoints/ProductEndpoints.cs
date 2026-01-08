@@ -13,7 +13,8 @@ public static class ProductEndpoints
 
         group.MapGet("/", GetProducts)
             .WithName("GetProducts")
-            .WithSummary("Get all available API products from APIM");
+            .WithSummary("Get all available API products from APIM")
+            .WithDescription("Required headers: X-APIM-ServiceName, X-APIM-ResourceGroup");
     }
 
     private static async Task<IResult> GetProducts(

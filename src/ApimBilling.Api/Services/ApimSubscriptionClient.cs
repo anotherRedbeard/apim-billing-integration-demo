@@ -29,18 +29,18 @@ public interface IApimSubscriptionClient
 public class ApimSubscriptionClient : IApimSubscriptionClient
 {
     private readonly HttpClient _httpClient;
-    private readonly ApimSettings _settings;
+    private readonly IApimConfigurationProvider _configProvider;
     private readonly TokenCredential _credential;
     private readonly ILogger<ApimSubscriptionClient> _logger;
     private const string ApiVersion = "2024-05-01";
 
     public ApimSubscriptionClient(
         HttpClient httpClient,
-        ApimSettings settings,
+        IApimConfigurationProvider configProvider,
         ILogger<ApimSubscriptionClient> logger)
     {
         _httpClient = httpClient;
-        _settings = settings;
+        _configProvider = configProvider;
         _logger = logger;
         
         // Use Managed Identity in Azure, DefaultAzureCredential for local dev
@@ -54,7 +54,10 @@ public class ApimSubscriptionClient : IApimSubscriptionClient
         string? ownerId = null)
     {
         var url = BuildSubscriptionUrl(subscriptionName);
-        var scope = $"/subscriptions/{_settings.SubscriptionId}/resourceGroups/{_settings.ResourceGroup}/providers/Microsoft.ApiManagement/service/{_settings.ApimName}/products/{productId}";
+        var subscriptionId = _configProvider.GetSubscriptionId();
+        var resourceGroup = _configProvider.GetResourceGroup();
+        var apimName = _configProvider.GetApimServiceName();
+        var scope = $"/subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.ApiManagement/service/{apimName}/products/{productId}";
 
         var request = new ApimSubscriptionRequest
         {
@@ -246,7 +249,10 @@ public class ApimSubscriptionClient : IApimSubscriptionClient
 
     private string BuildSubscriptionUrl(string subscriptionName, string? action = null)
     {
-        var baseUrl = $"https://management.azure.com/subscriptions/{_settings.SubscriptionId}/resourceGroups/{_settings.ResourceGroup}/providers/Microsoft.ApiManagement/service/{_settings.ApimName}/subscriptions/{subscriptionName}";
+        var subscriptionId = _configProvider.GetSubscriptionId();
+        var resourceGroup = _configProvider.GetResourceGroup();
+        var apimName = _configProvider.GetApimServiceName();
+        var baseUrl = $"https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.ApiManagement/service/{apimName}/subscriptions/{subscriptionName}";
         
         if (!string.IsNullOrEmpty(action))
         {
@@ -258,7 +264,10 @@ public class ApimSubscriptionClient : IApimSubscriptionClient
 
     private string BuildApimResourceUrl(string resourceType, string? action = null)
     {
-        var baseUrl = $"https://management.azure.com/subscriptions/{_settings.SubscriptionId}/resourceGroups/{_settings.ResourceGroup}/providers/Microsoft.ApiManagement/service/{_settings.ApimName}/{resourceType}";
+        var subscriptionId = _configProvider.GetSubscriptionId();
+        var resourceGroup = _configProvider.GetResourceGroup();
+        var apimName = _configProvider.GetApimServiceName();
+        var baseUrl = $"https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.ApiManagement/service/{apimName}/{resourceType}";
         
         if (!string.IsNullOrEmpty(action))
         {
@@ -297,6 +306,24 @@ public class ApimSubscriptionClient : IApimSubscriptionClient
         if (!response.IsSuccessStatusCode)
         {
             var error = await response.Content.ReadAsStringAsync();
+            
+            // Provide helpful error message for 403 (Forbidden) - likely RBAC issue
+            if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+            {
+                var apimName = _configProvider.GetApimServiceName();
+                var resourceGroup = _configProvider.GetResourceGroup();
+                _logger.LogError(
+                    "Access denied (403) when calling APIM API. The backend's Managed Identity does not have permission to access APIM instance '{ApimName}' in resource group '{ResourceGroup}'. " +
+                    "Please grant the 'API Management Service Contributor' role to the Managed Identity on this APIM instance. " +
+                    "Error details: {Error}",
+                    apimName, resourceGroup, error);
+                
+                throw new UnauthorizedAccessException(
+                    $"Access denied to APIM instance '{apimName}' in resource group '{resourceGroup}'. " +
+                    $"The backend's Managed Identity must be granted the 'API Management Service Contributor' role on this APIM instance. " +
+                    $"Contact your administrator to configure the required RBAC permissions.");
+            }
+            
             _logger.LogError("ARM API request failed: {StatusCode} - {Error}", 
                 response.StatusCode, error);
             response.EnsureSuccessStatusCode();

@@ -1,25 +1,18 @@
 using ApimBilling.Api.Configuration;
 using ApimBilling.Api.Endpoints;
+using ApimBilling.Api.Filters;
 using ApimBilling.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Load configuration from environment variables
-var apimSettings = new ApimSettings
-{
-    ApimName = builder.Configuration["APIM_NAME"] 
-        ?? throw new InvalidOperationException("APIM_NAME is required"),
-    ResourceGroup = builder.Configuration["APIM_RESOURCE_GROUP"] 
-        ?? throw new InvalidOperationException("APIM_RESOURCE_GROUP is required"),
-    SubscriptionId = builder.Configuration["AZURE_SUBSCRIPTION_ID"] 
-        ?? throw new InvalidOperationException("AZURE_SUBSCRIPTION_ID is required")
-};
+// Note: APIM configuration must be provided via required HTTP headers (X-APIM-ServiceName, X-APIM-ResourceGroup)
+// This allows dynamic APIM instance selection per request.
 
-// Validate configuration
-ConfigurationValidator.ValidateApimSettings(apimSettings);
+// Add HttpContextAccessor for accessing request headers
+builder.Services.AddHttpContextAccessor();
 
-// Register configuration
-builder.Services.AddSingleton(apimSettings);
+// Register APIM configuration provider (reads from required headers)
+builder.Services.AddScoped<IApimConfigurationProvider, ApimConfigurationProvider>();
 
 // Add services
 builder.Services.AddHttpClient<IApimSubscriptionClient, ApimSubscriptionClient>();
@@ -44,7 +37,23 @@ builder.Services.AddCors(options =>
 
 // Add OpenAPI/Swagger
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new()
+    {
+        Title = "APIM Billing API",
+        Version = "v1",
+        Description = @"API for managing Azure APIM subscriptions and billing. 
+
+**Required Headers:**
+All requests must include these headers:
+- `X-APIM-ServiceName`: Azure APIM service name (e.g., 'my-apim-instance')
+- `X-APIM-ResourceGroup`: Azure resource group name (e.g., 'my-resource-group')"
+    });
+
+    // Add operation filter to include APIM headers in Swagger UI
+    options.OperationFilter<ApimHeadersOperationFilter>();
+});
 
 var app = builder.Build();
 

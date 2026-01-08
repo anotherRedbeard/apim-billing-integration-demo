@@ -22,6 +22,8 @@
                     @{
                         var userEmail = Context.Session.GetString("UserEmail");
                         var userName = Context.Session.GetString("UserName");
+                        var apimServiceName = Context.Session.GetString("ApimServiceName");
+                        var apimResourceGroup = Context.Session.GetString("ApimResourceGroup");
                     }
                     @if (!string.IsNullOrEmpty(userEmail))
                     {
@@ -36,8 +38,22 @@
                                     <i class="bi bi-list-ul"></i> My Subscriptions
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Home" asp-action="ConfigureApim">
+                                    <i class="bi bi-cloud-fill"></i> APIM Config
+                                </a>
+                            </li>
                         </ul>
                         <ul class="navbar-nav ms-auto">
+                            @if (!string.IsNullOrEmpty(apimServiceName))
+                            {
+                                <li class="nav-item">
+                                    <span class="nav-link" title="@apimResourceGroup">
+                                        <i class="bi bi-cloud-check-fill text-success"></i> 
+                                        <span class="badge bg-light text-dark">@apimServiceName</span>
+                                    </span>
+                                </li>
+                            }
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
                                     <i class="bi bi-person-circle"></i> @userName
