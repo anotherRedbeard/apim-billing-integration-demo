@@ -126,6 +126,9 @@ public class ProductProperties
 
     [JsonPropertyName("approvalRequired")]
     public bool ApprovalRequired { get; set; }
+
+    [JsonPropertyName("terms")]
+    public string? Terms { get; set; }
 }
 
 /// <summary>
