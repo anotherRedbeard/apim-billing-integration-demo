@@ -37,7 +37,7 @@ public class BillingService : IBillingService
         var apimProducts = await _apimClient.ListApimProductsAsync();
         
         var products = apimProducts.Value?.
-            Where(p => p.Properties?.State == "published")
+            Where(p => p.Properties?.State == "published" && !string.IsNullOrEmpty(p.Properties?.Terms))
             .Select(p => new Product
             {
                 ProductId = p.Name ?? "",
